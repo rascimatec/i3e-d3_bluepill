@@ -1,6 +1,19 @@
 ## I3E-D3 Blupill implementation
-~/.platformio/packages/framework-mbed/targets/TARGET_STM/TARGET_STM32F1/TARGET_BLUEPILL_F103C8/PinNames.h
 
+Install rosserial packages:
+```bash
+sudo apt install ros-noetic-rosserial*
+```
+
+Inside the repository, run make_libraries from rosserial_mbed package:
+```bash 
+rosrun rosserial_mbed make_libraries.py .pio/libdeps/bluepill_f103c8
+```
+
+In the file:
+```
+~/.platformio/packages/framework-mbed/targets/TARGET_STM/TARGET_STM32F1/TARGET_BLUEPILL_F103C8/PinNames.h
+```
 Change USBTX and USBRX values:
 ```c++
 USBTX       = PA_9,
