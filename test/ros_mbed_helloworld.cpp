@@ -1,8 +1,9 @@
+
+
+
 #include <mbed.h>
 #include "ros.h"
 #include "std_msgs/String.h"
-
-Serial pc(PA_9, PA_10, 57600);
 
 ros::NodeHandle nh;
 
@@ -24,6 +25,6 @@ int main() {
     str_msg.data = hello;
     chatter.publish(&str_msg);
     nh.spinOnce();
-    wait_ms(100);
+    wait_ms(250);
   }
 }
