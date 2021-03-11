@@ -14,7 +14,7 @@
 #define PULSE_DISTANCE (TWO_PI/PULSES_PER_REVOLUTION)
 #define MAX_LINEAR_SPEED 1.6
 #define MAX_ANGULAR_SPEED (MAX_LINEAR_SPEED/WHEEL_RADIUS)
-#define MAX_LINEAR_ACCEL 2.0
+#define MAX_LINEAR_ACCEL 4.0
 #define MAX_ANGULAR_ACCEL (MAX_LINEAR_ACCEL/WHEEL_RADIUS)
 #define MAX_PID (3.0*TWO_PI)
 
@@ -63,8 +63,8 @@ double wl_pid = 0.0, wr_pid = 0.0;
 double wl_pwm = 0.0, wr_pwm = 0.0;
 
 double kp = 1.0,
-       ki = 2.0,
-       kd = 0.01;
+       ki = 1.8,
+       kd = 0.0;
 
 unsigned long int millis = 0;
 double dt;
@@ -107,14 +107,14 @@ void calculate_speed() {
 
 void limit_differential_speed() {
 
-  //double wl_accel = wl_desired_speed - wl_last_speed;
-  //double wr_accel = wr_desired_speed - wr_last_speed;
+  double wl_accel = wl_desired_speed - wl_last_speed;
+  double wr_accel = wr_desired_speed - wr_last_speed;
 
-  //double large_accel = ( std::max(std::abs(wl_accel), std::abs(wr_accel)) ) / dt;
-  //if (large_accel > MAX_ANGULAR_ACCEL) {
-  //  wl_desired_speed = wl_last_speed + MAX_ANGULAR_ACCEL * (large_accel/wl_accel);
-  //  wr_desired_speed = wr_last_speed + MAX_ANGULAR_ACCEL * (large_accel/wr_accel);
-  //}
+  double large_accel = ( std::max(std::abs(wl_accel), std::abs(wr_accel)) ) / 0.1;
+  if (large_accel > MAX_ANGULAR_ACCEL) {
+    wl_desired_speed = wl_last_speed + MAX_ANGULAR_ACCEL * (wl_accel/large_accel);
+    wr_desired_speed = wr_last_speed + MAX_ANGULAR_ACCEL * (wr_accel/large_accel);
+  }
 
   double large_speed = std::max(std::abs(wl_desired_speed), std::abs(wr_desired_speed));
   if (large_speed > MAX_ANGULAR_SPEED) {
@@ -153,6 +153,11 @@ void process_pid() {
   constrain_abs(wl_pwm, 1.0);
   constrain_abs(wr_pwm, 1.0);
 
+  if (wl_desired_speed > 0 && wl_pwm < 0.0) wl_pwm = 0.01;
+  if (wl_desired_speed < 0 && wl_pwm > 0.0) wl_pwm = -0.01;
+  if (wr_desired_speed < 0 && wr_pwm > 0.0) wr_pwm = 0.01;
+  if (wr_desired_speed < 0 && wr_pwm > 0.0) wr_pwm = -0.01;
+
   char array[8];
   sprintf(array, "%f", wl_pid);
   nh.loginfo(array);
@@ -181,7 +186,7 @@ void cmd_vel_callback(const geometry_msgs::Twist &cmd_vel){
 
 geometry_msgs::Twist get_twist_vel(double wl_desired_speed, double wr_desired_speed) {
   geometry_msgs::Twist twist;
-  twist.linear.x = WHEEL_RADIUS*(wr_desired_speed - wl_desired_speed) / 2;
+  twist.linear.x = WHEEL_RADIUS*(wr_desired_speed + wl_desired_speed) / 2;
   twist.angular.z = WHEEL_RADIUS*(wr_desired_speed - wl_desired_speed) / WHEEL_SEPARATION;
   return twist;
 }
@@ -215,13 +220,13 @@ int main() {
     last_time = current_time;
 
     calculate_speed();
-    //twist_odom_msg = get_twist_vel(wl_current_speed, wr_current_speed);
-    twist_odom_msg.linear.x = wl_current_speed;
-    twist_odom_msg.linear.y = wl_desired_speed;
-    twist_odom_msg.linear.z = wl_error_sum;
-    twist_odom_msg.angular.x = wr_current_speed;
-    twist_odom_msg.angular.y = wr_desired_speed;
-    twist_odom_msg.angular.z = wr_error_sum;
+    twist_odom_msg = get_twist_vel(wl_current_speed, wr_current_speed);
+    //twist_odom_msg.linear.x = wl_current_speed;
+    //twist_odom_msg.linear.y = wl_desired_speed;
+    //twist_odom_msg.linear.z = wl_error_sum;
+    //twist_odom_msg.angular.x = wr_current_speed;
+    //twist_odom_msg.angular.y = wr_desired_speed;
+    //twist_odom_msg.angular.z = wr_error_sum;
     twist_odom_pub.publish(&twist_odom_msg);
 
     process_pid();
