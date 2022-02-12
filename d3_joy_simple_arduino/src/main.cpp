@@ -45,6 +45,7 @@ void setup()
     pinMode(ML_PWM, OUTPUT);
 
     digitalWrite(ML_EN, HIGH);
+    digitalWrite(MR_EN, HIGH);
 
 }
 
