@@ -11,29 +11,21 @@ const int ML_INB = PB5;
 const int ML_PWM = PB14;
 
 String value;
+int angle, strength, button;
 
-String angle;
-String strength;
-String button;
+int pwmr, pwml;
 
 float vx, vy;
-
-uint8_t map_pwm_max_val;
-
-uint8_t pwm_l;
-uint8_t pwm_r;
-
-
 float getVx(int strength, int angle);
 float getVy(int strength, int angle);
 
-void setMotors(int vx, int vy);
-void stopMotors();
+
+void move(int pwmr, int pwml);
 
 void setup()
 {
     Serial1.begin(9600);
-    
+
     pinMode(MR_EN, OUTPUT);
     pinMode(MR_INA, OUTPUT);
     pinMode(MR_INB, OUTPUT);
@@ -51,30 +43,45 @@ void setup()
 
 void loop()
 {
-    if (Serial1.available() > 0)
+    if(Serial1.available() > 0)
     {
         value = Serial1.readStringUntil('#');
         if (value.length() == 7)
         {
-            angle = value.substring(0,3);
-            strength = value.substring(3,6);
-            button = value.substring(6,8);
+            angle = value.substring(0,3).toInt();
+            strength = value.substring(3,6).toInt();
+            button = value.substring(6,8).toInt();
 
-            if (button.toInt() == 0) map_pwm_max_val = 75;
-            else if (button.toInt() % 2) map_pwm_max_val = 120;
-            else map_pwm_max_val = 0;
-
-            vx = getVx(strength.toInt(), angle.toInt());
-            vy = getVy(strength.toInt(), angle.toInt());
-
-            setMotors(vx, vy);
-
-            Serial1.print("Button: "); Serial1.println(button);
-            
-            Serial1.flush();
-            value = "";
+            if (strength < 40 && strength > -40) strength = 0;
         }
     }
+
+    vx = getVx(strength, angle);
+    vy = getVy(strength, angle);
+
+    pwmr = map(vx, -100, 100, -50, 50);
+    pwml = pwmr;
+
+    pwmr -= map(vy, -100, 100, -30, 30);
+    pwml += map(vy, -100, 100, -30, 30);
+
+    move(pwmr, pwml);
+
+}
+
+void move(int pwmr, int pwml)
+{
+    bool dirr = pwmr > 0;
+    bool dirl = pwml > 0;
+
+    digitalWrite(MR_INA, dirr);
+    digitalWrite(MR_INB, !dirr);
+
+    digitalWrite(ML_INA, !dirl);
+    digitalWrite(ML_INB, dirl);
+    
+    analogWrite(MR_PWM, abs(pwmr));
+    analogWrite(ML_PWM, abs(pwml));
 }
 
 float getVx(int strength, int angle)
@@ -85,44 +92,4 @@ float getVx(int strength, int angle)
 float getVy(int strength, int angle)
 {
     return strength * sin(3.14*angle/180);
-}
-
-void setMotors(int vx, int vy)
-{
-    pwm_l = map(vx, -100, 100, -map_pwm_max_val, map_pwm_max_val) 
-          + map(vy, -100, 100, -map_pwm_max_val, map_pwm_max_val)/3;
-    pwm_r = map(vx, -100, 100, -map_pwm_max_val, map_pwm_max_val) 
-          - map(vy, -100, 100, -map_pwm_max_val, map_pwm_max_val)/3;
-
-    if (pwm_l > 0)
-    {
-        digitalWrite(ML_INA, LOW);
-        digitalWrite(ML_INB, HIGH);
-    }
-    else
-    {
-        digitalWrite(ML_INB, LOW);
-        digitalWrite(ML_INA, HIGH);
-    }
-    if (abs(pwm_l) > 5) analogWrite(ML_PWM, abs(pwm_l));
-    else analogWrite(ML_PWM, 0);
-
-    if (pwm_r > 0)
-    {
-        digitalWrite(MR_INB, LOW);
-        digitalWrite(MR_INA, HIGH);
-    }
-    else
-    {
-        digitalWrite(MR_INA, LOW);
-        digitalWrite(MR_INB, HIGH);
-    }
-    if (abs(pwm_r) > 5) analogWrite(MR_PWM, abs(pwm_r));
-    else analogWrite(MR_PWM, 0);
-}
-
-void stopMotors()
-{
-    analogWrite(ML_PWM, 0);
-    analogWrite(MR_PWM, 0);
 }
