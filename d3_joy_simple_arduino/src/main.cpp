@@ -14,6 +14,7 @@ String value;
 int angle, strength, button;
 
 int pwmr, pwml;
+float multiplier = 1.0;
 
 float vx, vy;
 float getVx(int strength, int angle);
@@ -53,6 +54,15 @@ void loop()
             button = value.substring(6,8).toInt();
 
             if (strength < 40 && strength > -40) strength = 0;
+
+            if (angle > 345 || angle < 15) angle = 0;
+            else if (angle > 165 && angle < 195) angle = 180;
+            else if (angle > 75 && angle < 105) angle = 90;
+            else if (angle > 255 || angle < 285) angle = 270;
+
+            if (button % 2) multiplier = 1.5;
+            else if (button != 0) multiplier = 0.0;
+            else multiplier = 1.0;
         }
     }
 
@@ -64,6 +74,9 @@ void loop()
 
     pwmr -= map(vy, -100, 100, -30, 30);
     pwml += map(vy, -100, 100, -30, 30);
+
+    pwmr *= multiplier;
+    pwml *= multiplier;
 
     move(pwmr, pwml);
 
