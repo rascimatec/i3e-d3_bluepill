@@ -14,6 +14,7 @@ String value;
 int angle, strength, button;
 
 int pwmr, pwml;
+int pwm_map = 80;
 float multiplier = 1.0;
 
 float vx, vy;
@@ -55,12 +56,13 @@ void loop()
 
             if (strength < 40 && strength > -40) strength = 0;
 
-            if (angle > 345 || angle < 15) angle = 0;
-            else if (angle > 165 && angle < 195) angle = 180;
-            else if (angle > 75 && angle < 105) angle = 90;
-            else if (angle > 255 || angle < 285) angle = 270;
+            if (angle > 350 || angle < 10) angle = 0;
+            else if (angle > 170 && angle < 190) angle = 180;
+            else if (angle > 80 && angle < 100) angle = 90;
+            else if (angle > 260 && angle < 280) angle = 270;
 
-            if (button % 2) multiplier = 1.5;
+            if (button == 1) multiplier = 0.5;
+            else if (button == 3) multiplier = 1.5;
             else if (button != 0) multiplier = 0.0;
             else multiplier = 1.0;
         }
@@ -69,11 +71,11 @@ void loop()
     vx = getVx(strength, angle);
     vy = getVy(strength, angle);
 
-    pwmr = map(vx, -100, 100, -50, 50);
+    pwmr = map(vx, -100, 100, -pwm_map, pwm_map);
     pwml = pwmr;
 
-    pwmr -= map(vy, -100, 100, -30, 30);
-    pwml += map(vy, -100, 100, -30, 30);
+    pwmr -= map(vy, -100, 100, -pwm_map, pwm_map)/2;
+    pwml += map(vy, -100, 100, -pwm_map, pwm_map)/2;
 
     pwmr *= multiplier;
     pwml *= multiplier;
